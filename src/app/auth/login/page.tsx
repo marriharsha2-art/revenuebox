@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -10,7 +10,14 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/use-toast'
 import { Bot, Loader2 } from 'lucide-react'
 
+
 export default function LoginPage() {
+  return (
+    <div>
+      Login
+    </div>
+  )
+}
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
