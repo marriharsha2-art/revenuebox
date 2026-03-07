@@ -1,10 +1,10 @@
-import { createServerClient } from '@/lib/supabase'
+import { createBrowserClient } from '@/lib/supabase'
 import { redirect } from 'next/navigation'
 import { formatCurrency } from '@/lib/utils'
 import { Users, DollarSign, TrendingUp, Target, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 export default async function DashboardPage() {
-  const supabase = createServerClient()
+  const supabase = createBrowserClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect('/auth/login')
 

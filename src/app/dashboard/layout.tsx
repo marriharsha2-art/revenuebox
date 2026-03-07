@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@/lib/supabase'
+import { createBrowserClient } from '@/lib/supabase'
 import { DashboardSidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 
@@ -8,7 +8,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createServerClient()
+  const supabase = createBrowserClient()
   const { data: { session } } = await supabase.auth.getSession()
 
   if (!session) {
@@ -19,7 +19,7 @@ export default async function DashboardLayout({
   const [profileResult, tenantResult] = await Promise.all([
     supabase.from('profiles').select('*, tenants(*)').eq('id', session.user.id).single(),
     supabase.from('subscriptions').select('*').eq('tenant_id',
-      (await supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single()).data?.tenant_id ?? ''
+      ((await supabase.from('profiles').select('tenant_id').eq('id', session.user.id).single()) as any).data?.tenant_id ?? ''
     ).single(),
   ])
 

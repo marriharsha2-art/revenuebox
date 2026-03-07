@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase'
 
 export async function POST(req: Request) {
   const body = await req.text()
-  const signature = headers().get('stripe-signature')!
+  const signature = (await headers()).get('stripe-signature')!
 
   let event: Stripe.Event
   try {
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     switch (event.type) {
       // ─── Checkout completed ───────────────────────────────────────
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.CheckoutSession
+        const session = event.data.object as Stripe.Checkout.Session
         const { tenantId } = session.metadata ?? {}
         if (!tenantId || !session.subscription || !session.customer) break
 
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
           current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
           current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
           cancel_at_period_end: subscription.cancel_at_period_end,
-        }, { onConflict: 'tenant_id' })
+        } as any) , { onConflict: 'tenant_id' }
 
         // Log activity
         await supabase.from('activities').insert({
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
           entity_id: subscription.id,
           action: `Subscribed to ${plan} plan`,
           metadata: { plan, priceId },
-        })
+        } as any)
         break
       }
 
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
         const priceId = subscription.items.data[0]?.price.id
         const plan = getPlanFromPriceId(priceId)
 
-        await supabase.from('subscriptions').update({
+        await (supabase.from('subscriptions') as any).update({
           stripe_price_id: priceId,
           plan,
           status: subscription.status as any,
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       // ─── Subscription deleted/canceled ───────────────────────────
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
-        await supabase.from('subscriptions').update({
+        await (supabase.from('subscriptions') as any).update({
           plan: 'free',
           status: 'canceled',
           stripe_subscription_id: null,
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
         const invoice = event.data.object as Stripe.Invoice
         if (invoice.subscription) {
           const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
-          await supabase.from('subscriptions').update({
+          await (supabase.from('subscriptions') as any).update({
             status: 'active',
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
         if (invoice.subscription) {
-          await supabase.from('subscriptions').update({ status: 'past_due' })
+          await (supabase.from('subscriptions') as any).update({ status: 'past_due' })
             .eq('stripe_subscription_id', invoice.subscription as string)
         }
         break
